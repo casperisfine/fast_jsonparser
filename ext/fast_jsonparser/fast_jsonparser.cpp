@@ -27,9 +27,11 @@ static VALUE make_ruby_object(dom::element element, bool symbolize_names)
             for (dom::key_value_pair field : dom::object(element))
             {
                 std::string_view view(field.key);
-                VALUE k = rb_utf8_str_new(view.data(), view.size());
+                VALUE k;
                 if (symbolize_names) {
-                    k = ID2SYM(rb_intern_str(k));
+                    k = ID2SYM(rb_intern2(view.data(), view.size()));
+                } else {
+                    k = rb_utf8_str_new(view.data(), view.size());
                 }
                 VALUE v = make_ruby_object(field.value, symbolize_names);
                 rb_hash_aset(hash, k, v);

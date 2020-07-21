@@ -6,6 +6,16 @@ VALUE rb_eFastJsonparserUnknownError, rb_eFastJsonparserParseError;
 
 using namespace simdjson;
 
+static inline bool is_ascii(const std::string_view &v) {
+  for (size_t i = 0; i < v.size(); i++) {
+    if (static_cast<unsigned char>(v[i]) >= 128) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 // Convert tape to Ruby's Object
 static VALUE make_ruby_object(dom::element element)
 {
@@ -27,9 +37,14 @@ static VALUE make_ruby_object(dom::element element)
             for (dom::key_value_pair field : dom::object(element))
             {
                 std::string_view view(field.key);
-                VALUE k = rb_intern_str(rb_utf8_str_new(view.data(), view.size()));
+                VALUE k;
+                if (is_ascii(view)) {
+                    k = ID2SYM(rb_intern2(view.data(), view.size()));
+                } else {
+                    k = ID2SYM(rb_intern_str(rb_utf8_str_new(view.data(), view.size())));
+                }
                 VALUE v = make_ruby_object(field.value);
-                rb_hash_aset(hash, ID2SYM(k), v);
+                rb_hash_aset(hash, k, v);
             }
             return hash;
         }
